@@ -2,28 +2,31 @@ stages:
   - build
 
 variables:
-  AWS_REGION: "us-east-1"
-  ECR_REGISTRY: "<your_aws_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com"
-  IMAGE_NAME: "$ECR_REGISTRY/<your-ecr-repo-name>"
+  AWS_REGION: ""
+  ECR_REGISTRY: "<your_account>.dkr.ecr.$AWS_REGION.amazonaws.com"
+  IMAGE_NAME: "$ECR_REGISTRY/<your-ecr-repo>"
   TAG: "$CI_COMMIT_SHORT_SHA"
 
 build:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:latest
-    entrypoint: [""]  # Override entrypoint
+    entrypoint: [""]
   script:
-    # Ensure AWS CLI is available (Kaniko image does not have it by default)
-    - |
-      echo "Installing AWS CLI..."
-      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-      unzip awscliv2.zip
-      ./aws/install
-      export PATH=$PATH:/usr/local/bin
+    # 🧪 DEBUG: Show container credentials status
+    - echo "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI=$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
+    - curl -s "http://169.254.170.2${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI}" || echo "Failed to fetch credentials"
 
-    # Authenticate with ECR using IAM role
+    # ✅ Install AWS CLI (not included in Kaniko image)
+    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    - unzip awscliv2.zip
+    - ./aws/install
+    - export PATH=$PATH:/usr/local/bin
+
+    # ✅ Get ECR auth token using IAM role (via metadata service)
     - export ECR_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
 
+    # ✅ Set up Kaniko registry config
     - mkdir -p /kaniko/.docker
     - |
       cat > /kaniko/.docker/config.json <<EOF
@@ -37,7 +40,7 @@ build:
       }
       EOF
 
-    # Build and push with Kaniko
+    # ✅ Build + push with Kaniko
     - /kaniko/executor \
         --context "$CI_PROJECT_DIR" \
         --dockerfile "$CI_PROJECT_DIR/Dockerfile" \
