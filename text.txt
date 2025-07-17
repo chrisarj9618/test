@@ -1,0 +1,46 @@
+stages:
+  - build
+
+variables:
+  AWS_REGION: "us-east-1"
+  ECR_REGISTRY: "<your_aws_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com"
+  IMAGE_NAME: "$ECR_REGISTRY/<your-ecr-repo-name>"
+  TAG: "$CI_COMMIT_SHORT_SHA"
+
+build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:latest
+    entrypoint: [""]  # Override entrypoint
+  script:
+    # Ensure AWS CLI is available (Kaniko image does not have it by default)
+    - |
+      echo "Installing AWS CLI..."
+      curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      unzip awscliv2.zip
+      ./aws/install
+      export PATH=$PATH:/usr/local/bin
+
+    # Authenticate with ECR using IAM role
+    - export ECR_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
+
+    - mkdir -p /kaniko/.docker
+    - |
+      cat > /kaniko/.docker/config.json <<EOF
+      {
+        "auths": {
+          "$ECR_REGISTRY": {
+            "username": "AWS",
+            "password": "$ECR_PASSWORD"
+          }
+        }
+      }
+      EOF
+
+    # Build and push with Kaniko
+    - /kaniko/executor \
+        --context "$CI_PROJECT_DIR" \
+        --dockerfile "$CI_PROJECT_DIR/Dockerfile" \
+        --destination "$IMAGE_NAME:$TAG" \
+        --destination "$IMAGE_NAME:latest" \
+        --reproducible
