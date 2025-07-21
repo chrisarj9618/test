@@ -1,49 +1,15 @@
-stages:
-  - build
-
-variables:
-  AWS_REGION: ""
-  ECR_REGISTRY: "<your_account>.dkr.ecr.$AWS_REGION.amazonaws.com"
-  IMAGE_NAME: "$ECR_REGISTRY/<your-ecr-repo>"
-  TAG: "$CI_COMMIT_SHORT_SHA"
-
 build:
-  stage: build
-  image:
-    name: gcr.io/kaniko-project/executor:latest
-    entrypoint: [""]
+  image: moby/buildkit:latest
+  variables:
+    AWS_REGION: "us-east-1"
+    IMAGE_URI: "<account_id>.dkr.ecr.us-east-1.amazonaws.com/my-app:latest"
+  before_script:
+    - mkdir -p /tmp/buildkit
+    - nohup buildkitd --addr unix:///tmp/buildkit/buildkitd.sock --root /tmp/buildkit > /dev/null 2>&1 &
+    - sleep 5  # Wait for buildkitd to start
   script:
-    # 🧪 DEBUG: Show container credentials status
-    - echo "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI=$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"
-    - curl -s "http://169.254.170.2${AWS_CONTAINER_CREDENTIALS_RELATIVE_URI}" || echo "Failed to fetch credentials"
-
-    # ✅ Install AWS CLI (not included in Kaniko image)
-    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    - unzip awscliv2.zip
-    - ./aws/install
-    - export PATH=$PATH:/usr/local/bin
-
-    # ✅ Get ECR auth token using IAM role (via metadata service)
-    - export ECR_PASSWORD=$(aws ecr get-login-password --region $AWS_REGION)
-
-    # ✅ Set up Kaniko registry config
-    - mkdir -p /kaniko/.docker
-    - |
-      cat > /kaniko/.docker/config.json <<EOF
-      {
-        "auths": {
-          "$ECR_REGISTRY": {
-            "username": "AWS",
-            "password": "$ECR_PASSWORD"
-          }
-        }
-      }
-      EOF
-
-    # ✅ Build + push with Kaniko
-    - /kaniko/executor \
-        --context "$CI_PROJECT_DIR" \
-        --dockerfile "$CI_PROJECT_DIR/Dockerfile" \
-        --destination "$IMAGE_NAME:$TAG" \
-        --destination "$IMAGE_NAME:latest" \
-        --reproducible
+    - buildctl --addr unix:///tmp/buildkit/buildkitd.sock build \
+        --frontend dockerfile.v0 \
+        --local context=. \
+        --local dockerfile=. \
+        --output type=image,name=$IMAGE_URI,push=true
