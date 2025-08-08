@@ -1,0 +1,24 @@
+ID,Text,Lane,Type,Next ID,Next Text (auto),Link Label
+A,"Submit ticket in ServiceNow
+(Request type: New / Update)",Requester,Start,B,Manager approval?,
+B,Manager approval?,Managers,Decision,Q,Resolve/Close parent ticket and notify requester,Rejected
+B,Manager approval?,Managers,Decision,C,Group SPOC approval (if required)?,Approved
+C,Group SPOC approval (if required)?,Group SPOC,Decision,Q,Resolve/Close parent ticket and notify requester,Rejected
+C,Group SPOC approval (if required)?,Group SPOC,Decision,D,Request type?,Approved or Not Required
+D,Request type?,ServiceNow,Decision,E,Create Task A: AD Team,New user
+D,Request type?,ServiceNow,Decision,F,Create Task B: GitLab Team,New user
+D,Request type?,ServiceNow,Decision,L,Grant subgroup/project perms (Update existing),Update existing
+E,Create Task A: AD Team,ServiceNow,Process,G,User in Azure AD GitLab SAML group?,
+G,User in Azure AD GitLab SAML group?,AD Team,Decision,H,Add user to Azure AD GitLab SAML group,No
+G,User in Azure AD GitLab SAML group?,AD Team,Decision,I,Mark Task A: Closed - Skipped,Yes
+H,Add user to Azure AD GitLab SAML group,AD Team,Process,J,Email notification to distro (loop GitLab Team),
+I,Mark Task A: Closed - Skipped,AD Team,Process,J,Email notification to distro (loop GitLab Team),
+J,Email notification to distro (loop GitLab Team),AD Team,Email,K,Provision/verify user in GitLab (New user),
+K,Provision/verify user in GitLab (New user),GitLab Team,Process,M,Perms already granted by Maintainer?,
+L,Grant subgroup/project perms (Update existing),GitLab Team,Process,M,Perms already granted by Maintainer?,
+M,Perms already granted by Maintainer?,GitLab Team,Decision,O,Close: Skipped (already had perms),Yes
+M,Perms already granted by Maintainer?,GitLab Team,Decision,N,Close task / Update ticket,No
+O,Close: Skipped (already had perms),GitLab Team,Process,Q,Resolve/Close parent ticket and notify requester,
+N,Close task / Update ticket,GitLab Team,Process,Q,Resolve/Close parent ticket and notify requester,
+F,Create Task B: GitLab Team,ServiceNow,Process,,,
+Q,Resolve/Close parent ticket and notify requester,ServiceNow,End,,,
