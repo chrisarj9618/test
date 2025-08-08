@@ -1,0 +1,21 @@
+Source,Target,Label
+Submit ticket in ServiceNow,Manager approval?,
+Manager approval?,Resolve/Close parent ticket and notify requester,Rejected
+Manager approval?,Group SPOC approval (if required)?,Approved
+Group SPOC approval (if required)?,Resolve/Close parent ticket and notify requester,Rejected
+Group SPOC approval (if required)?,Request type?,Approved or Not Required
+Request type?,Create Task A: AD Team,New user
+Request type?,Create Task B: GitLab Team,New user
+Request type?,Grant subgroup/project perms (Update existing),Update existing
+Create Task A: AD Team,User in Azure AD GitLab SAML group?,
+User in Azure AD GitLab SAML group?,Add user to Azure AD GitLab SAML group,No
+User in Azure AD GitLab SAML group?,Mark Task A: Closed - Skipped,Yes
+Add user to Azure AD GitLab SAML group,Email notification to distro (loop GitLab Team),
+Mark Task A: Closed - Skipped,Email notification to distro (loop GitLab Team),
+Email notification to distro (loop GitLab Team),Provision/verify user in GitLab (New user),
+Provision/verify user in GitLab (New user),Perms already granted by Maintainer?,
+Grant subgroup/project perms (Update existing),Perms already granted by Maintainer?,
+Perms already granted by Maintainer?,Close: Skipped (already had perms),Yes
+Perms already granted by Maintainer?,Close task / Update ticket,No
+Close: Skipped (already had perms),Resolve/Close parent ticket and notify requester,
+Close task / Update ticket,Resolve/Close parent ticket and notify requester,
