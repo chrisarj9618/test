@@ -1,0 +1,85 @@
+GitLab SaaS – SAML SSO and Subgroup Permission Behavior
+📌 Overview
+
+This page explains how SAML SSO with Azure AD works in GitLab SaaS when applied at different group levels, and what happens when you mix SAML role mappings with manual role assignments in parent and child groups.
+
+🔑 Key Concepts
+
+SAML SSO scope:
+
+When SAML is enabled at a group or subgroup, GitLab uses Azure AD group claims to map users to roles at that specific group.
+
+Each group/subgroup with SSO enabled manages its own role mappings independently.
+
+Inheritance:
+
+Roles assigned at a group cascade downward into subgroups and projects, unless overridden by a more specific assignment.
+
+Roles do not cascade upward. A membership in a subgroup doesn’t automatically make the user a member of its parent group.
+
+Manual vs. SAML roles:
+
+Manual roles at the same group where SAML is enabled are overwritten on the user’s next login (or via SCIM if enabled).
+
+Manual roles in subgroups (below the SAML-enabled group) are preserved.
+
+Manual roles in parent groups (above the SAML-enabled group) are also preserved.
+
+📂 Example Hierarchy
+DevOps         (parent group, no SSO)
+└─ GitLab      (subgroup, SSO enabled with mapping → Developer)
+   └─ Python-Automation (nested subgroup, no SSO)
+
+👤 User Scenario
+Case 1 – User assigned via SAML at GitLab
+
+Azure AD → GitLab SSO mapping = Developer
+
+On login, user becomes Developer in GitLab
+
+Role cascades to Python-Automation (Developer)
+
+No membership in DevOps unless manually added
+
+Case 2 – Manual role at Python-Automation
+
+Add user manually as Maintainer in Python-Automation
+
+User remains Developer in GitLab (from SAML)
+
+User is Maintainer in Python-Automation (manual role persists)
+
+Case 3 – Manual role at DevOps (parent group)
+
+Add user manually as Maintainer in DevOps
+
+User remains Developer in GitLab (because SAML at GitLab overrides inherited role)
+
+User remains Maintainer in DevOps (no SSO there, so manual assignment sticks)
+
+Effective permissions:
+
+DevOps → Maintainer
+
+GitLab → Developer
+
+Python-Automation → Developer (or Maintainer if direct membership is set)
+
+⚠️ Gotchas
+
+Do not manually promote/demote users at the same group where SSO is active.
+Changes will be reverted on next SAML login.
+
+If you need “exceptions” (e.g., someone should be Maintainer in one subgroup but Developer elsewhere), assign them via direct membership in that subgroup.
+
+If SCIM is enabled, add/remove events from Azure AD flow through automatically. Without SCIM, changes apply at the user’s next SSO login.
+
+✅ Best Practices
+
+Configure SAML mappings only at the subgroup where baseline access should be enforced.
+
+Use Azure AD groups to manage standard role assignments (Developer, Reporter, etc.).
+
+Use manual subgroup memberships sparingly for exceptions.
+
+Avoid conflicting role definitions between parent and child groups — SSO mappings take precedence at their own scope.
