@@ -55,3 +55,16 @@ output "subgroup_id" {
 output "subgroup_exists_already" {
   value = local.exists
 }
+
+
+data "external" "subgroup_lookup" {
+  program = ["bash", "${path.module}/check-group.sh"]
+
+  # Everything the script needs goes over STDIN as JSON:
+  query = {
+    parent_full_path     = var.parent_full_path
+    subgroup_path        = var.subgroup_path
+    gitlab_token         = var.gitlab_token
+    gitlab_api_base_url  = coalesce(var.gitlab_api_base_url, "https://gitlab.com/api/v4")
+  }
+}
