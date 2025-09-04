@@ -1,0 +1,48 @@
+image: hashicorp/terraform:1.7.5
+
+stages:
+  - plan
+  - apply
+
+variables:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+before_script:
+  - terraform --version
+  - apk add --no-cache curl jq
+
+plan:
+  stage: plan
+  script:
+    - cd terraform
+    - terraform init
+    # OPTIONAL: try to import subgroup if it already exists
+    - |
+      GROUP_ID=$(curl -sS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+        "$GITLAB_BASE_URL/api/v4/groups/$PARENT_GROUP_PATH" | jq -r .id)
+
+      SUB_ID=$(curl -sS --header "PRIVATE-TOKEN: $GITLAB_TOKEN" \
+        "$GITLAB_BASE_URL/api/v4/groups/$PARENT_GROUP_PATH/$SUBGROUP_PATH" | jq -r .id)
+
+      if [ "$SUB_ID" != "null" ]; then
+        echo "Subgroup already exists, importing into state..."
+        terraform import gitlab_group.subgroup "$SUB_ID" || true
+      fi
+
+    - terraform plan \
+        -var="gitlab_token=$GITLAB_TOKEN" \
+        -var="parent_group_id=$GROUP_ID" \
+        -var="subgroup_name=$SUBGROUP_NAME" \
+        -var="subgroup_path=$SUBGROUP_PATH" \
+        -out=tfplan
+  artifacts:
+    paths: [terraform/tfplan]
+    when: always
+
+apply:
+  stage: apply
+  script:
+    - cd terraform
+    - terraform apply -auto-approve tfplan
+  when: manual
