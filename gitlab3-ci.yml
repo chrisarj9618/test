@@ -1,0 +1,14 @@
+stages:
+  - infra
+
+variables:
+  GITLAB_GROUP_PATH: "parent/child/subgroup"
+  GITLAB_TOKEN: $CI_JOB_TOKEN   # or a project/group variable with API scope
+  GITLAB_API_URL: "https://gitlab.com/api/v4"
+
+infra-apply:
+  stage: infra
+  image: hashicorp/terraform:1.9
+  script:
+    - terraform init
+    - terraform apply -auto-approve -var "gitlab_group_path=${GITLAB_GROUP_PATH}" -var "gitlab_token=${GITLAB_TOKEN}"
